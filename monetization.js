@@ -36,14 +36,22 @@
         body:JSON.stringify({initData:tg.initData,plan}),
         credentials:'omit'
       });
-      if(!r.ok) throw new Error('invoice');
-      const {invoice}=await r.json();
+      const rawText=await r.text();
+      if(!r.ok){
+        alert('DEBUG invoice error\nstatus: '+r.status+'\nbody: '+rawText);
+        throw new Error('invoice');
+      }
+      const {invoice}=JSON.parse(rawText);
+      if(!invoice){
+        alert('DEBUG: no invoice field in response\nbody: '+rawText);
+        throw new Error('no invoice');
+      }
       await new Promise((resolve,reject)=>tg.openInvoice(invoice,status=>{if(status==='paid')resolve();else if(status==='cancelled'||status==='failed')reject(new Error(status));}));
       await refresh();
       window.dispatchEvent(new CustomEvent('colorlette:pro-updated'));
       if(state.pro) close();
       return state.pro;
-    }catch{return false}finally{state.loading=false}
+    }catch(err){alert('DEBUG catch: '+(err&&err.message));return false}finally{state.loading=false}
   }
   window.ColorlettePro={isPro:()=>state.pro,refresh,buy,open,close};
   document.addEventListener('click',e=>{
