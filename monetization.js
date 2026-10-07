@@ -10,7 +10,15 @@
   const note = (key='proPricingNote') => { const el=$('proNote'); if(el) el.textContent=(window.t?.(key)||el.textContent); };
   async function refresh(){
     if(!API_BASE || !tg?.initData) return state.pro;
-    try{const r=await fetch(API_BASE.replace(/\/$/,'')+'/pro/status',{headers:{'X-Telegram-Init-Data':tg.initData},credentials:'omit'});if(r.ok){const j=await r.json();state.pro=!!j.pro;}}catch{}
+    try{
+      const r=await fetch(API_BASE.replace(/\/$/,'')+'/pro/status',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({initData:tg.initData}),
+        credentials:'omit'
+      });
+      if(r.ok){const j=await r.json();state.pro=!!j.active;}
+    }catch{}
     return state.pro;
   }
   async function buy(plan){
@@ -22,10 +30,15 @@
     if(state.loading) return false;
     state.loading=true;
     try{
-      const r=await fetch(API_BASE.replace(/\/$/,'')+'/pro/invoice',{method:'POST',headers:{'Content-Type':'application/json','X-Telegram-Init-Data':tg.initData},body:JSON.stringify({product:'pro',plan}),credentials:'omit'});
+      const r=await fetch(API_BASE.replace(/\/$/,'')+'/pro/invoice',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({initData:tg.initData,plan}),
+        credentials:'omit'
+      });
       if(!r.ok) throw new Error('invoice');
-      const {url}=await r.json();
-      await new Promise((resolve,reject)=>tg.openInvoice(url,status=>{if(status==='paid')resolve();else if(status==='cancelled'||status==='failed')reject(new Error(status));}));
+      const {invoice}=await r.json();
+      await new Promise((resolve,reject)=>tg.openInvoice(invoice,status=>{if(status==='paid')resolve();else if(status==='cancelled'||status==='failed')reject(new Error(status));}));
       await refresh();
       window.dispatchEvent(new CustomEvent('colorlette:pro-updated'));
       if(state.pro) close();
