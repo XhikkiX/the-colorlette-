@@ -1,0 +1,8 @@
+
+/* Telegram Mini App + iPhone safe-area layer */
+html.tg-mini-app,html.tg-mini-app body{min-height:100%;}
+html.tg-mini-app body{padding-bottom:max(0px,var(--tg-safe-area-inset-bottom,0px));}
+html.tg-mini-app header{top:max(8px,var(--tg-safe-area-inset-top,0px));padding-top:8px;}
+html.tg-mini-app main.container{padding-left:max(0px,var(--tg-safe-area-inset-left,0px));padding-right:max(0px,var(--tg-safe-area-inset-right,0px));}
+@supports (height:100dvh){html.tg-mini-app body{min-height:100dvh;}}
+@media (max-width:560px){html.tg-mini-app .container,html.tg-mini-app header{width:calc(100% - 16px);max-width:none;}}

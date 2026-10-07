@@ -1,0 +1,2 @@
+window.COLORLETTE_PRO_API = '';
+window.COLORLETTE_DONATE_URL = '';
