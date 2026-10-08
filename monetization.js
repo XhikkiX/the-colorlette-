@@ -1,15 +1,58 @@
 /* the colorlette° — Pro pricing UI. Payments are handled by the Telegram backend when configured. */
 (() => {
-  const DEBUG = true; // после проверки поставь false
+  const DEBUG = false;
   const API_BASE = (window.COLORLETTE_PRO_API || '').replace(/\/$/, '');
   const tg = window.Telegram?.WebApp;
-  const state = { pro: false, loading: false, plan: null };
+  const state = { pro: false, loading: false, plan: null, expiresAt: null };
   const $ = id => document.getElementById(id);
   const open = () => { $('donateBackdrop')?.classList.add('show'); document.body.style.overflow = 'hidden'; };
   const close = () => { $('donateBackdrop')?.classList.remove('show'); document.body.style.overflow = ''; };
   const dbg = msg => { if (DEBUG) { try { alert('DEBUG ' + msg); } catch {} } };
   const sleep = ms => new Promise(r => setTimeout(r, ms));
   const notify = () => window.dispatchEvent(new CustomEvent('colorlette:pro-updated'));
+
+  const SPARK = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.4 7.6L22 12l-7.6 2.4L12 22l-2.4-7.6L2 12l7.6-2.4z"/></svg>';
+  const isRu = () => (document.documentElement.lang || '').toLowerCase().startsWith('ru');
+
+  function ensureProUi() {
+    const brand = document.querySelector('.brand-name');
+    if (brand && !brand.querySelector('.pro-tag')) {
+      const tag = document.createElement('span');
+      tag.className = 'pro-tag';
+      tag.setAttribute('aria-label', 'Pro');
+      tag.innerHTML = SPARK + '<span class="pro-tag-text">PRO</span>';
+      brand.appendChild(tag);
+    }
+    const lead = document.querySelector('.pro-pricing-modal .pricing-lead');
+    if (lead && !document.getElementById('proStatus')) {
+      const box = document.createElement('div');
+      box.id = 'proStatus';
+      box.className = 'pro-status';
+      lead.insertAdjacentElement('afterend', box);
+    }
+  }
+
+  function renderProStatus() {
+    const box = document.getElementById('proStatus');
+    if (!box) return;
+    const ru = isRu();
+    let text;
+    const until = state.expiresAt ? new Date(state.expiresAt) : null;
+    if (!until || until.getFullYear() >= 2090) {
+      text = ru ? 'Pro активен навсегда' : 'Pro is active forever';
+    } else {
+      const d = until.toLocaleDateString(ru ? 'ru-RU' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+      text = ru ? 'Pro активен до ' + d : 'Pro is active until ' + d;
+    }
+    box.innerHTML = SPARK + '<span></span>';
+    box.lastChild.textContent = text;
+  }
+
+  function applyProUi() {
+    ensureProUi();
+    document.documentElement.classList.toggle('is-pro', state.pro);
+    if (state.pro) renderProStatus();
+  }
 
   async function refresh() {
     if (!tg?.initData) return state.pro; // обычный сайт, не Telegram
@@ -25,6 +68,8 @@
       if (r.ok) {
         const was = state.pro;
         state.pro = !!(j.pro || j.active);
+        state.expiresAt = state.pro ? (j.expiresAt || null) : null;
+        applyProUi();
         if (state.pro !== was) notify();
       } else {
         dbg('status ' + r.status + ' ' + text.slice(0, 200));
@@ -114,5 +159,8 @@
   $('donateModalClose')?.addEventListener('click', close);
   $('donateBackdrop')?.addEventListener('click', e => { if (e.target.id === 'donateBackdrop') close(); });
 
+  ensureProUi();
+  new MutationObserver(() => { if (state.pro) renderProStatus(); })
+    .observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
   refresh();
 })();
