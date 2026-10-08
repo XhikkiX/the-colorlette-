@@ -1868,9 +1868,7 @@ async function pvPng(){
     ctx.scale(scale,scale);ctx.drawImage(img,0,0);
     cv.toBlob(blob=>{
       if(!blob){showToast(t("toastExportFailed"));return}
-      const url=URL.createObjectURL(blob),a=document.createElement("a");
-      a.href=url;a.download="the-colorlette-preview-"+pv.layout+"-"+pv.theme+".png";
-      document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+      saveBlob(blob,"the-colorlette-preview-"+pv.layout+"-"+pv.theme+".png");
       showToast(t("toastPngDownloaded"));
     },"image/png");
   }catch{showToast(t("toastExportFailed"))}
@@ -2272,12 +2270,7 @@ function downloadPalettePNG(){
     if(!canvas)throw new Error("Canvas unavailable");
     canvas.toBlob(blob=>{
       if(!blob){showToast(t("toastExportFailed")||"Export failed");return;}
-      const url=URL.createObjectURL(blob);
-      const a=document.createElement("a");
-      a.download="the-colorlette-"+exportKind+".png";
-      a.href=url;
-      document.body.appendChild(a);a.click();a.remove();
-      setTimeout(()=>URL.revokeObjectURL(url),1000);
+      saveBlob(blob,"the-colorlette-"+exportKind+".png");
       showToast(t("toastPngDownloaded"));
     },"image/png");
   }catch(e){
@@ -2296,14 +2289,41 @@ function f32be(v){const b=new Uint8Array(4);new DataView(b.buffer).setFloat32(0,
 function concatBytes(arrs){let len=0;arrs.forEach(a=>len+=a.length);const out=new Uint8Array(len);let o=0;arrs.forEach(a=>{out.set(a,o);o+=a.length});return out}
 function strBytes(s){return new TextEncoder().encode(s)}
 function exportNames(){const roles=getDisplayRoles();return colors.map((c,i)=>roleLabel(roles[i]))}
-function downloadBytes(bytes,filename,mime){
-  const blob=new Blob([bytes],{type:mime});
+// Сохранение файла. В Telegram Mini App обычный <a download> с blob-ссылкой не работает,
+// поэтому файл временно кладётся на воркер, а Telegram скачивает его по ссылке.
+async function saveBlob(blob,filename){
+  const tg=window.Telegram&&window.Telegram.WebApp;
+  const api=(window.COLORLETTE_PRO_API||"").replace(/\/$/,"");
+  if(tg&&tg.initData&&api){
+    try{
+      const r=await fetch(api+"/file/upload?name="+encodeURIComponent(filename)+"&type="+encodeURIComponent(blob.type||"application/octet-stream"),{
+        method:"POST",
+        headers:{"X-Telegram-Init-Data":tg.initData,"Content-Type":"application/octet-stream"},
+        body:blob,
+        credentials:"omit"
+      });
+      const j=await r.json();
+      if(!r.ok||!j.url)throw new Error(j.error||("HTTP "+r.status));
+      if(typeof tg.downloadFile==="function"&&(!tg.isVersionAtLeast||tg.isVersionAtLeast("8.0"))){
+        tg.downloadFile({url:j.url,file_name:filename});
+      }else if(tg.openLink){
+        tg.openLink(j.url);
+      }else{
+        window.open(j.url,"_blank");
+      }
+      return true;
+    }catch(e){/* если не вышло — пробуем обычное скачивание ниже */}
+  }
   const url=URL.createObjectURL(blob);
   const a=document.createElement("a");
   a.href=url;a.download=filename;a.rel="noopener";
   a.style.position="fixed";a.style.left="-9999px";
   document.body.appendChild(a);a.click();a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),1000);
+  return false;
+}
+function downloadBytes(bytes,filename,mime){
+  saveBlob(new Blob([bytes],{type:mime}),filename);
 }
 
 // Adobe Swatch Exchange (.ase) — бинарник, big-endian. открывается прямо в
