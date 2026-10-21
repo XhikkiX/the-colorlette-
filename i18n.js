@@ -345,6 +345,18 @@ Object.keys(libTr).forEach(l=>Object.assign(translations[l],libTr[l]));
 Object.assign(translations.en,{proIncludesTitle:"Included with Pro",proPerk3:"All future Pro export features",planQuarterSave:"SAVE 47",planYearSave:"SAVE 188",freeSupportText:"Prefer to support the free studio?",donateModalCoffeeBtn:"Support the project"});
 Object.assign(translations.ru,{proIncludesTitle:"В Pro входит",proPerk3:"Все будущие функции Pro-экспорта",planQuarterSave:"ЭКОНОМИЯ 47",planYearSave:"ЭКОНОМИЯ 188",freeSupportText:"Хотите поддержать бесплатную студию?",donateModalCoffeeBtn:"Поддержать проект"});
 
+// Лента палитр теперь главная функция обновления — добавляем её в обучение и в подпись под кнопкой.
+Object.assign(translations.en,{
+  feedCtaHint:"An endless, swipeable feed of ready-made palettes",
+  tourStepFeedTitle:"Swipe the palette feed",
+  tourStepFeedBody:"Our favorite way to explore colorlette now — an endless feed of ready-made palettes you swipe through like Shorts. Like one, tune it to a mood, or apply it in a tap."
+});
+Object.assign(translations.ru,{
+  feedCtaHint:"Бесконечная лента готовых палитр — листай как Shorts",
+  tourStepFeedTitle:"Листай ленту палитр",
+  tourStepFeedBody:"Теперь это наш любимый способ исследовать colorlette — бесконечная лента готовых палитр, которую листаешь как Shorts. Лайкай понравившиеся, настраивай под настроение и применяй в один тап."
+});
+
 const supportedLangs=["en","ru"];
 function detectLang(){
   let saved=null;

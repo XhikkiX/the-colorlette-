@@ -13,7 +13,7 @@ Object.assign(translations.en, {
   feedCopy:"Copy palette", feedMore:"More", feedTune:"Feed settings", feedNext:"Next palette", feedPrev:"Previous palette",
   feedToastLiked:"Saved to History ♥", feedToastUnliked:"Removed from favorites", feedToastApplied:"Palette applied",
   feedToastHex:"{v} copied", feedToastImage:"Image saved", feedToastTuned:"Feed updated", feedCoach:"Swipe up for the next one · double-tap to like",
-  feedMoreHex:"Copy HEX codes", feedMoreCss:"Copy CSS variables", feedMoreLink:"Copy link", feedMoreImage:"Save as image", feedOpenIn:"Open in studio",
+  feedMoreHex:"Copy HEX codes", feedMoreCss:"Copy CSS variables", feedMoreLink:"Copy link", feedMoreImage:"Save as image", feedMoreStory:"Share to Telegram story", feedOpenIn:"Open in studio",
   feedTuneTitle:"Tune your feed", feedTuneSub:"New palettes will follow your taste.", feedMood:"Mood", feedAny:"Any", feedCount:"Colors per palette", feedMix:"Mix",
   feedShareText:"“{name}” — a palette from the colorlette°", feedSheetLabel:"Palette actions",
   feedImgTitle:"Your image is ready", feedImgHint:"Press and hold the image, then choose “Save image”.", feedImgShare:"Send / save via…", feedImgCopy:"Copy image", feedToastImgCopied:"Image copied"
@@ -23,7 +23,7 @@ Object.assign(translations.ru, {
   feedCopy:"Копировать палитру", feedMore:"Ещё", feedTune:"Настройки ленты", feedNext:"Следующая палитра", feedPrev:"Предыдущая палитра",
   feedToastLiked:"Сохранено в историю ♥", feedToastUnliked:"Убрано из избранного", feedToastApplied:"Палитра применена",
   feedToastHex:"{v} скопирован", feedToastImage:"Картинка сохранена", feedToastTuned:"Лента обновлена", feedCoach:"Свайп вверх — следующая · двойной тап — лайк",
-  feedMoreHex:"Скопировать HEX-коды", feedMoreCss:"Скопировать CSS-переменные", feedMoreLink:"Скопировать ссылку", feedMoreImage:"Сохранить картинкой", feedOpenIn:"Открыть в студии",
+  feedMoreHex:"Скопировать HEX-коды", feedMoreCss:"Скопировать CSS-переменные", feedMoreLink:"Скопировать ссылку", feedMoreImage:"Сохранить картинкой", feedMoreStory:"Поделиться в истории Telegram", feedOpenIn:"Открыть в студии",
   feedTuneTitle:"Настройте ленту", feedTuneSub:"Новые палитры подстроятся под ваш вкус.", feedMood:"Настроение", feedAny:"Любое", feedCount:"Цветов в палитре", feedMix:"Микс",
   feedShareText:"«{name}» — палитра из the colorlette°", feedSheetLabel:"Действия с палитрой",
   feedImgTitle:"Картинка готова", feedImgHint:"Нажмите на картинку и удерживайте, затем выберите «Сохранить изображение».", feedImgShare:"Отправить / сохранить через…", feedImgCopy:"Копировать картинку", feedToastImgCopied:"Картинка скопирована"
@@ -207,7 +207,8 @@ const I = {
   link:'<svg viewBox="0 0 24 24"><path d="M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1"/></svg>',
   image:'<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="9" cy="9" r="1.6"/><path d="M21 15l-5-5L5 21"/></svg>',
   studio:'<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M4 10h16M10 10v10"/></svg>',
-  bigHeart:'<svg viewBox="0 0 24 24"><path d="M12 21s-8-4.9-9.8-9.9C1 7.4 3.1 4 6.8 4c2.2 0 3.9 1.2 5.2 3.2C13.3 5.2 15 4 17.2 4c3.7 0 5.8 3.4 4.6 7.1C20 16.1 12 21 12 21Z"/></svg>'
+  bigHeart:'<svg viewBox="0 0 24 24"><path d="M12 21s-8-4.9-9.8-9.9C1 7.4 3.1 4 6.8 4c2.2 0 3.9 1.2 5.2 3.2C13.3 5.2 15 4 17.2 4c3.7 0 5.8 3.4 4.6 7.1C20 16.1 12 21 12 21Z"/></svg>',
+  story:'<svg viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="4"/><path d="M9 9.5c0-1 1-1.8 2-1.2l3.2 2a1.4 1.4 0 0 1 0 2.4L11 14.7c-1 .6-2-.2-2-1.2z"/></svg>'
 };
 
 /* ============================ DOM ============================ */
@@ -422,11 +423,19 @@ let imgBlob = null;
 const blobToDataUrl = blob => new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => res(""); r.readAsDataURL(blob); });
 async function saveImage(it){
   const blob = await imageBlob(it); if (!blob) return;
-  // в Telegram Mini App скачивание через <a download> не работает — показываем картинку для долгого нажатия
-  // и даём системный шеринг / копирование
-  if (tg && tg.initData){ imgBlob = blob; openSheet("img", await blobToDataUrl(blob)); return; }
+  const filename = "colorlette-" + it.colors.map(c => c.slice(1)).join("-").toLowerCase() + ".png";
+  // в Telegram Mini App скачивание через <a download> не работает — грузим файл на воркер
+  // и скачиваем его через tg.downloadFile(); если это не удалось (нет сети/воркера),
+  // как последний резерв показываем картинку для долгого нажатия + ручной шеринг/копирование
+  if (tg && tg.initData){
+    try {
+      const res = window.ColorletteSaveFile ? await window.ColorletteSaveFile(blob, filename) : { ok: false };
+      if (res && res.ok){ toast(t("feedToastImage")); return; }
+    } catch {}
+    imgBlob = blob; openSheet("img", await blobToDataUrl(blob)); return;
+  }
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
-  a.download = "colorlette-" + it.colors.map(c => c.slice(1)).join("-").toLowerCase() + ".png";
+  a.download = filename;
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
   toast(t("feedToastImage"));
 }
@@ -434,7 +443,19 @@ async function share(){
   const it = items[cur]; if (!it) return;
   const url = linkFor(it), name = nameOf(it), text = t("feedShareText").replace("{name}", name);
   if (tg && tg.initData && tg.openTelegramLink){
-    tg.openTelegramLink("https://t.me/share/url?url=" + encodeURIComponent(url) + "&text=" + encodeURIComponent(text)); return;
+    // раньше в Telegram шарилась голая ссылка на сайт (превью было просто "ссылкой на гитхаб").
+    // Теперь грузим картинку палитры на воркер и шарим её — в списке чатов это показывается
+    // как красивая карточка с превью, а не голый URL.
+    let shareUrl = url;
+    try {
+      const blob = await imageBlob(it);
+      if (blob && window.ColorletteUploadFile){
+        const res = await window.ColorletteUploadFile(blob, "colorlette-" + it.colors.map(c => c.slice(1)).join("-").toLowerCase() + ".png");
+        if (res && res.ok && res.url) shareUrl = res.url;
+      }
+    } catch {}
+    tg.openTelegramLink("https://t.me/share/url?url=" + encodeURIComponent(shareUrl) + "&text=" + encodeURIComponent(text + " " + url));
+    return;
   }
   if (navigator.share){
     try {
@@ -448,9 +469,12 @@ async function share(){
 
 /* ============================ шторки ============================ */
 let sheetKind = "";
+let sheetOpenedAt = 0;
 function openSheet(kind, extra){
   const it = items[cur]; if (!it) return;
+  // если уже открыта та же шторка — просто перерисуем контент, не трогая анимацию заново
   sheetKind = kind;
+  els.sheet.style.transform = ""; // сбрасываем возможный «хвост» инлайн-стиля от прерванного drag-закрытия
   let h = '<div class="fgrab" id="fGrab"></div>';
   if (kind === "more"){
     const names = namesOf(it);
@@ -458,6 +482,7 @@ function openSheet(kind, extra){
       '<div class="fs-strip">' + it.colors.map(c => '<div style="background:' + c + '"></div>').join("") + '</div>' +
       '<div class="fs-list">' +
         row("hex", I.hash, t("feedMoreHex")) + row("css", I.code, t("feedMoreCss")) + row("link", I.link, t("feedMoreLink")) + row("img", I.image, t("feedMoreImage")) +
+        (tg && tg.initData && typeof tg.shareToStory === "function" ? row("story", I.story, t("feedMoreStory")) : "") +
       '</div><div class="fs-label">' + esc(t("feedOpenIn")) + '</div><div class="fs-chips">' +
         [["shades","tabShades"],["gradient","tabGradient"],["contrast","tabContrast"],["preview","tabPreview"]].map(v => '<button type="button" class="fchip" data-open="' + v[0] + '">' + esc(t(v[1])) + '</button>').join("") +
       '</div>';
@@ -476,6 +501,7 @@ function openSheet(kind, extra){
   els.sheet.innerHTML = h;
   els.sheet.setAttribute("aria-label", t("feedSheetLabel"));
   els.sheetWrap.classList.add("open");
+  sheetOpenedAt = performance.now();
   bindGrab();
 }
 const row = (id, ic, label) => '<button type="button" class="fs-row" data-row="' + id + '">' + ic + '<span>' + esc(label) + '</span></button>';
@@ -506,6 +532,17 @@ function sheetClick(e){
     if (id === "css"){ copyText(":root{\n" + it.colors.map((c,i) => "  --color-" + (i+1) + ": " + c + ";").join("\n") + "\n}"); toast(t("toastCopied")); }
     if (id === "link"){ copyText(linkFor(it)); toast(t("toastCopied")); }
     if (id === "img"){ saveImage(it); }
+    if (id === "story"){
+      (async () => {
+        try {
+          const blob = await imageBlob(it);
+          if (blob && window.ColorletteUploadFile){
+            const res = await window.ColorletteUploadFile(blob, "colorlette-story.png");
+            if (res && res.ok && res.url) tg.shareToStory(res.url, { text: t("feedShareText").replace("{name}", nameOf(it)) });
+          }
+        } catch {}
+      })();
+    }
     closeSheet(); return;
   }
   const o = e.target.closest("[data-open]");
@@ -527,7 +564,14 @@ function bind(){
   els.root.addEventListener("click", e => {
     const hexBtn = e.target.closest(".fhex"); if (hexBtn){ copyHex(hexBtn); return; }
     if (e.target.closest(".fsheet")){ sheetClick(e); return; }
-    if (e.target === els.sheetWrap){ closeSheet(); return; }
+    if (e.target === els.sheetWrap){
+      // В Telegram WebView тап по кнопке иногда порождает «призрачный» повторный клик на тех же
+      // координатах чуть позже — к тому моменту открывшаяся шторка уже перекрывает кнопку, и этот
+      // клик ошибочно попадает на фон, мгновенно закрывая только что открытую шторку. Короткое окно
+      // после открытия игнорирует такие клики по фону, оставляя обычное закрытие тапом снаружи рабочим.
+      if (performance.now() - sheetOpenedAt > 260) closeSheet();
+      return;
+    }
     const b = e.target.closest("[data-act]"); if (!b) return;
     switch (b.dataset.act){
       case "close": leave(); break;
@@ -595,7 +639,10 @@ window.addEventListener("keydown", e => {
 
 /* ============================ открыть / закрыть ============================ */
 const GUARD = "header,main,footer,.marquee-section";
-const onTgBack = () => leave();
+// баг: раньше системная кнопка «назад» в Telegram всегда закрывала всю ленту целиком,
+// даже если была открыта только нижняя шторка (например, «ещё» или «настройка ленты») —
+// теперь она сперва закрывает шторку, и только затем, при повторном нажатии, ленту
+const onTgBack = () => { if (sheetKind) closeSheet(); else leave(); };
 function open(){
   if (isOpen || !B) return;
   build();

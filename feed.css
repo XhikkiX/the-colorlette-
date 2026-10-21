@@ -1,13 +1,35 @@
 /* the colorlette° — Feed mode (Shorts-style palette scroller) */
 
 /* ---------- entry points ---------- */
-.feed-btn{position:relative;color:var(--accent)}
-.feed-btn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
-.feed-btn .feed-dot{position:absolute;top:7px;right:7px;width:8px;height:8px;border-radius:50%;background:var(--donate);box-shadow:0 0 0 2px var(--card)}
-.feed-btn .feed-dot::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--donate);opacity:0;animation:feedPing 2s var(--ease) infinite}
+.feed-btn{position:relative;color:#fff;border-color:transparent;
+  background:linear-gradient(135deg,#FF6B5E,#FF9F5E 35%,#F5D76E 55%,#1FC2B8 78%,#7457FF);
+  background-size:220% 220%;animation:feedBtnShift 7s ease infinite;box-shadow:0 6px 18px rgba(116,87,255,.28)}
+.feed-btn svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 1px 1px rgba(0,0,0,.18))}
+.feed-btn:hover{box-shadow:0 10px 26px rgba(116,87,255,.38)}
+@keyframes feedBtnShift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+.feed-btn .feed-dot{position:absolute;top:6px;right:6px;width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 0 2px rgba(0,0,0,.18)}
+.feed-btn .feed-dot::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid #fff;opacity:0;animation:feedPing 2s var(--ease) infinite}
 @keyframes feedPing{0%{transform:scale(.4);opacity:.7}100%{transform:scale(1.5);opacity:0}}
-.feed-cta{margin-top:26px;display:inline-flex;align-items:center;gap:10px;padding:14px 22px;border-radius:999px;font-weight:700;font-size:15px}
-.feed-cta svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+.feed-cta-wrap{margin-top:28px;display:flex;flex-direction:column;align-items:center;gap:12px}
+.feed-cta{position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:11px;padding:16px 28px;
+  border-radius:999px;font-weight:800;font-size:16px;color:#fff;border-color:transparent;letter-spacing:-.01em;
+  background:linear-gradient(120deg,#FF6B5E,#FF9F5E 28%,#F5D76E 48%,#1FC2B8 70%,#7457FF);
+  background-size:260% 260%;animation:feedBtnShift 8s ease infinite;
+  box-shadow:0 14px 34px rgba(116,87,255,.32),0 2px 8px rgba(0,0,0,.08)}
+.feed-cta:hover{transform:translateY(-3px) scale(1.015);box-shadow:0 20px 44px rgba(116,87,255,.4),0 2px 8px rgba(0,0,0,.1)}
+.feed-cta:active{transform:scale(.97)}
+.feed-cta svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;position:relative;z-index:1;
+  filter:drop-shadow(0 1px 1px rgba(0,0,0,.2))}
+.feed-cta span{position:relative;z-index:1;text-shadow:0 1px 2px rgba(0,0,0,.15)}
+.feed-cta::after{content:"";position:absolute;top:0;left:-60%;width:40%;height:100%;
+  background:linear-gradient(115deg,transparent,rgba(255,255,255,.55),transparent);
+  transform:skewX(-18deg);animation:feedCtaShine 3.4s ease-in-out infinite}
+@keyframes feedCtaShine{0%{left:-60%}38%,100%{left:140%}}
+.feed-cta-hint{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--muted)}
+.feed-cta-strip{display:inline-flex;height:9px;width:46px;border-radius:999px;overflow:hidden;box-shadow:0 0 0 1px var(--line)}
+.feed-cta-strip span{flex:1}
+@media(prefers-reduced-motion:reduce){.feed-btn,.feed-cta,.feed-cta::after{animation:none!important}}
 
 /* ---------- overlay shell ---------- */
 html.feed-lock,html.feed-lock body{overflow:hidden;overscroll-behavior:none}

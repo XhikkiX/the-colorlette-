@@ -2956,6 +2956,7 @@ document.addEventListener("keydown",e=>{
 // --- Onboarding spotlight tour ---
 const tourSteps=[
  {target:null,tab:null,titleKey:"tourStep1Title",bodyKey:"tourStep1Body"},
+ {target:"#feedCta",tab:null,titleKey:"tourStepFeedTitle",bodyKey:"tourStepFeedBody"},
  {target:"#generateBtn",tab:"generator",titleKey:"tourStep2Title",bodyKey:"tourStep2Body"},
  {target:"[data-view='shades']",tab:null,titleKey:"tourStep3Title",bodyKey:"tourStep3Body"},
  {target:"#parseBtn",tab:"generator",titleKey:"tourStep4Title",bodyKey:"tourStep4Body"},
