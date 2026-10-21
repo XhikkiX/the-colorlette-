@@ -24,11 +24,12 @@
 <script src="https://telegram.org/js/telegram-web-app.js?64"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Inter:wght@400;500;600;700;800;900&family=Oswald:wght@500;600;700&family=Montserrat:wght@500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="main.css">
 <link rel="stylesheet" href="preview.css">
 <link rel="stylesheet" href="telegram.css">
 <link rel="stylesheet" href="monetization.css?v=4">
+<link rel="stylesheet" href="feed.css?v=1">
 </head>
 <body>
 <svg width="0" height="0" style="position:absolute;overflow:hidden" aria-hidden="true">
@@ -51,6 +52,7 @@
     <div class="brand-name">the <b>colorlette</b><span>°</span></div>
   </div>
   <div class="actions">
+    <button type="button" class="icon-btn feed-btn" id="feedBtn" title="Palette feed" aria-label="Palette feed" data-i18n-title="feedBtnTitle"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="3"/><path d="M5 9h14M5 15h14"/></svg><span class="feed-dot" aria-hidden="true"></span></button>
     <button type="button" class="icon-btn" id="tourBtn" title="Take the tour" aria-label="Take the tour" aria-haspopup="dialog" data-i18n-title="tourBtnTitle"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 0 1 5 0c0 1.5-1.7 2-2.2 2.9-.2.35-.3.75-.3 1.2" stroke-linecap="round"/><circle cx="12" cy="17" r=".9" fill="currentColor" stroke="none"/></svg></button>
     <button type="button" class="icon-btn" id="donateBtn" title="Support this project" aria-label="Support this project" aria-haspopup="dialog" data-i18n-title="donateTitle"><svg viewBox="0 0 24 24"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg></button>
     <button type="button" class="icon-btn" id="randomBtn" title="Random mood" aria-label="Random mood" data-i18n-title="iconRandomMood"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5"/><circle cx="8.6" cy="8.6" r="1.1" fill="currentColor" stroke="none"/><circle cx="15.4" cy="8.6" r="1.1" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.1" fill="currentColor" stroke="none"/><circle cx="8.6" cy="15.4" r="1.1" fill="currentColor" stroke="none"/><circle cx="15.4" cy="15.4" r="1.1" fill="currentColor" stroke="none"/></svg></button>
@@ -67,6 +69,7 @@
   <div class="eyebrow" data-i18n="heroEyebrow">A little studio for big colors</div>
   <h1><span data-i18n="heroLine1">Make it colorful.</span><br><span class="soft" data-i18n="heroLine2">Make it yours.</span></h1>
   <p data-i18n="heroP">Palettes, gradients, shades and nature-inspired combinations — without the clutter.</p>
+  <button type="button" class="primary feed-cta" id="feedCta"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="3"/><path d="M5 9h14M5 15h14"/></svg><span data-i18n="feedCta">Swipe palettes</span></button>
 </section>
 
 <section class="panel glass">
@@ -584,6 +587,7 @@
 <script src="telegram.js" defer></script>
 <script src="i18n.js" defer></script>
 <script src="monetization.js?v=5" defer></script>
-<script src="app.js?v=3" defer></script>
+<script src="feed.js?v=1" defer></script>
+<script src="app.js?v=4" defer></script>
 </body>
 </html>

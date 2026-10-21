@@ -1,0 +1,150 @@
+/* the colorlette° — Feed mode (Shorts-style palette scroller) */
+
+/* ---------- entry points ---------- */
+.feed-btn{position:relative;color:var(--accent)}
+.feed-btn svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.feed-btn .feed-dot{position:absolute;top:7px;right:7px;width:8px;height:8px;border-radius:50%;background:var(--donate);box-shadow:0 0 0 2px var(--card)}
+.feed-btn .feed-dot::after{content:"";position:absolute;inset:-4px;border-radius:50%;border:2px solid var(--donate);opacity:0;animation:feedPing 2s var(--ease) infinite}
+@keyframes feedPing{0%{transform:scale(.4);opacity:.7}100%{transform:scale(1.5);opacity:0}}
+.feed-cta{margin-top:26px;display:inline-flex;align-items:center;gap:10px;padding:14px 22px;border-radius:999px;font-weight:700;font-size:15px}
+.feed-cta svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---------- overlay shell ---------- */
+html.feed-lock,html.feed-lock body{overflow:hidden;overscroll-behavior:none}
+.feed{position:fixed;inset:0;z-index:400;display:none;justify-content:center;background:#000;color:#fff;
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  -webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;--glow:#333}
+.feed.open{display:flex;animation:feedIn .42s var(--ease) both}
+.feed.closing{display:flex;animation:feedOut .22s ease both;pointer-events:none}
+@keyframes feedIn{from{opacity:0;transform:translateY(28px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes feedOut{to{opacity:0;transform:translateY(16px) scale(.99)}}
+
+.feed-glow{position:absolute;inset:-25%;background-color:var(--glow);opacity:.5;filter:blur(70px);
+  -webkit-mask:radial-gradient(closest-side,#000 20%,transparent 100%);mask:radial-gradient(closest-side,#000 20%,transparent 100%);
+  transition:background-color .7s ease;pointer-events:none}
+
+.feed-stage{position:relative;width:100%;max-width:520px;height:100%;overflow:hidden;background:#111;isolation:isolate}
+@media(min-width:700px) and (min-height:640px){
+  .feed-stage{height:min(calc(100% - 40px),980px);align-self:center;border-radius:30px;box-shadow:0 40px 120px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08)}
+}
+
+/* ---------- reset for our buttons (main.css styles every <button>) ---------- */
+:where(.feed) button{all:unset;box-sizing:border-box;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+:where(.feed) button:hover{transform:none;box-shadow:none}
+:where(.feed) button:focus-visible{outline:3px solid #fff;outline-offset:3px}
+
+@media(max-width:699px){.feed-glow{display:none}}
+/* ---------- scroller ---------- */
+.feed-scroll{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;scroll-snap-type:y mandatory;
+  overscroll-behavior:contain;touch-action:pan-y;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.feed-scroll::-webkit-scrollbar{display:none}
+
+.fcard{position:relative;width:100%;height:100%;scroll-snap-align:start;scroll-snap-stop:always;overflow:hidden;container-type:size}
+.fbands{position:absolute;inset:0;display:grid;grid-template-rows:repeat(var(--n),1fr)}
+.fband{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(10px,3.2cqw,20px);text-align:center;overflow:hidden}
+
+.fband:first-child{padding-top:calc(env(safe-area-inset-top,0px) + 34px)}
+.fname{font-family:Oswald,"Bebas Neue","Arial Narrow",Impact,sans-serif;font-weight:700;text-transform:uppercase;
+  line-height:1.08;padding-top:.08em;letter-spacing:.004em;white-space:nowrap;opacity:0;transition:transform .7s var(--ease),opacity .5s ease;transform-origin:50% 60%}
+.fname span{display:inline-block}
+.fhex{position:relative;z-index:2;font-family:Montserrat,Inter,sans-serif;font-weight:500;font-size:clamp(13px,3.9cqw,20px);
+  letter-spacing:.015em;color:inherit;padding:7px 16px;margin:0;border-radius:999px;opacity:0;
+  transition:background-color .2s,transform .18s var(--ease),opacity .5s ease}
+.fhex:hover{background-color:color-mix(in srgb,currentColor 14%,transparent)}
+.fhex:active{transform:scale(.94)}
+.fhex.copied{background-color:color-mix(in srgb,currentColor 22%,transparent)}
+
+.fcard.fit .fname,.fcard.fit .fhex{opacity:1}
+.fcard:not(.is-active) .fname{transform:scale(.94) translateY(6px)}
+.fcard:not(.is-active) .fhex{opacity:.75}
+.fcard,.fbands{will-change:transform;backface-visibility:hidden}
+
+.ftop{position:absolute;left:0;right:0;top:0;z-index:3;height:calc(env(safe-area-inset-top,0px) + 58px);
+  padding:env(safe-area-inset-top,0px) 66px 0;display:flex;justify-content:space-between;align-items:center;
+  font:500 clamp(12.5px,3.7cqw,16px)/1 Inter,sans-serif;letter-spacing:.015em;text-transform:uppercase;pointer-events:none}
+.fcount{font-variant-numeric:tabular-nums;font-size:clamp(17px,5cqw,24px);font-weight:500;letter-spacing:0}
+
+.fswipe{position:absolute;right:18px;bottom:calc(env(safe-area-inset-bottom,0px) + 36px);z-index:3;display:flex;align-items:center;gap:8px;
+  font:500 clamp(12.5px,3.6cqw,15px)/1 Inter,sans-serif;letter-spacing:.05em;text-transform:uppercase;pointer-events:none}
+.fswipe svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;animation:fBob 1.6s ease-in-out infinite}
+@keyframes fBob{0%,100%{transform:translateY(2px)}50%{transform:translateY(-4px)}}
+.feed-stage.seen .fswipe{display:none}
+
+/* ---------- floating controls ---------- */
+.fbtn,.fact-ic,.fapply{background:rgba(12,12,16,.42);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  border:1px solid rgba(255,255,255,.22);box-shadow:0 8px 22px rgba(0,0,0,.18);color:#fff}
+.fbtn{position:absolute;z-index:6;top:calc(env(safe-area-inset-top,0px) + 9px);width:40px;height:40px;border-radius:50%;display:grid;place-items:center;
+  transition:transform .2s var(--ease),background-color .2s}
+.fbtn:active{transform:scale(.9)}
+.fclose{left:12px}.ftune{right:12px}
+.fbtn svg,.fact-ic svg,.fapply svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+
+.frail{position:absolute;z-index:6;right:8px;bottom:calc(env(safe-area-inset-bottom,0px) + 86px);display:flex;flex-direction:column;gap:12px;align-items:center}
+.fact{display:block;width:46px;height:46px;border-radius:50%}
+.fact-ic{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;transition:transform .22s var(--ease),background-color .25s,border-color .25s}
+.fact:active .fact-ic{transform:scale(.88)}
+.fact-ic svg{width:23px;height:23px}
+.fact[data-act=like].on .fact-ic{background:#ff3b5c;border-color:transparent;box-shadow:0 8px 24px rgba(255,59,92,.45)}
+.fact[data-act=like].on svg{fill:#fff;stroke:#fff}
+.fact[data-act=like].pop .fact-ic{animation:fPop .5s var(--ease)}
+@keyframes fPop{0%{transform:scale(1)}30%{transform:scale(1.34)}60%{transform:scale(.9)}100%{transform:scale(1)}}
+
+.fapply{position:absolute;z-index:6;left:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 22px);height:46px;padding:0 20px 0 15px;border-radius:999px;
+  display:flex;align-items:center;gap:9px;font:700 14.5px/1 Inter,sans-serif;letter-spacing:.005em;transition:transform .2s var(--ease),background-color .2s}
+.fapply:active{transform:scale(.95)}
+.fapply:hover{background:rgba(12,12,16,.62)}
+.fapply svg{width:20px;height:20px;stroke-width:2.4}
+
+.feed-nav{display:none}
+@media(min-width:700px) and (hover:hover){
+  .feed-nav{display:flex;flex-direction:column;gap:12px;position:absolute;top:50%;left:calc(50% + 260px + 28px);transform:translateY(-50%)}
+  .feed-nav button{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;transition:background-color .2s,transform .2s var(--ease)}
+  .feed-nav button:hover{background:rgba(255,255,255,.22)}
+  .feed-nav button:active{transform:scale(.92)}
+  .feed-nav svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+  .feed-nav button[disabled]{opacity:.3;pointer-events:none}
+}
+
+/* ---------- feed toast ---------- */
+.ftoast{position:absolute;z-index:30;left:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 78px);transform:translateY(14px);width:max-content;max-width:calc(100% - 88px);
+  display:flex;align-items:center;gap:10px;padding:11px 16px;border-radius:20px;background:rgba(14,14,18,.88);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  color:#fff;font:600 13px/1.25 Inter,sans-serif;opacity:0;pointer-events:none;transition:opacity .25s,transform .35s var(--ease);box-shadow:0 12px 32px rgba(0,0,0,.3)}
+.ftoast.show{opacity:1;transform:none;pointer-events:auto}
+.ftoast .sw{width:14px;height:14px;border-radius:50%;flex:none;border:1.5px solid rgba(255,255,255,.7)}
+.ftoast button{color:#9d8cff;font-weight:800;padding:2px 0}
+
+/* ---------- like burst ---------- */
+.fburst{position:absolute;z-index:25;width:0;height:0;pointer-events:none}
+.fburst svg{position:absolute;left:-48px;top:-48px;width:96px;height:96px;fill:#fff;filter:drop-shadow(0 8px 24px rgba(0,0,0,.35));animation:fHeart .85s var(--ease) both}
+@keyframes fHeart{0%{transform:scale(.2) rotate(-12deg);opacity:0}25%{transform:scale(1.15) rotate(4deg);opacity:1}55%{transform:scale(.95) rotate(0)}100%{transform:scale(1.25) translateY(-30px);opacity:0}}
+.fburst i{position:absolute;left:-5px;top:-5px;width:10px;height:10px;border-radius:50%;background:var(--c);animation:fSpark .8s var(--ease) both;animation-delay:.04s}
+@keyframes fSpark{from{transform:translate(0,0) scale(1);opacity:1}to{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0}}
+
+/* ---------- bottom sheet ---------- */
+.fsheet-wrap{position:absolute;inset:0;z-index:20;display:flex;align-items:flex-end;background:rgba(0,0,0,0);pointer-events:none;transition:background-color .3s}
+.fsheet-wrap.open{background:rgba(0,0,0,.55);pointer-events:auto}
+.fsheet{width:100%;max-height:86%;overflow-y:auto;overscroll-behavior:contain;background:var(--card);color:var(--text);border-radius:28px 28px 0 0;
+  padding:0 18px calc(env(safe-area-inset-bottom,0px) + 20px);transform:translateY(104%);transition:transform .42s var(--ease);box-shadow:0 -20px 60px rgba(0,0,0,.35)}
+.fsheet-wrap.open .fsheet{transform:none}
+.fsheet.dragging{transition:none}
+.fgrab{display:flex;justify-content:center;padding:12px 0 10px;touch-action:none;cursor:grab;position:sticky;top:0;background:var(--card);z-index:2}
+.fgrab::before{content:"";width:42px;height:5px;border-radius:99px;background:var(--line-strong)}
+.fs-title{font:800 20px/1.15 var(--font-display);letter-spacing:-.02em;margin:4px 0 4px}
+.fs-sub{font-size:12.5px;color:var(--muted);margin-bottom:14px}
+.fs-strip{display:flex;height:46px;border-radius:14px;overflow:hidden;margin:6px 0 18px;box-shadow:inset 0 0 0 1px var(--line)}
+.fs-strip div{flex:1}
+.fs-list{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:18px;overflow:hidden}
+.fs-row{display:flex!important;align-items:center;gap:14px;padding:0 16px;min-height:54px;font:600 15px/1.2 Inter,sans-serif;color:var(--text);transition:background-color .2s}
+.fs-row+.fs-row{border-top:1px solid var(--line)}
+.fs-row:hover{background:var(--line)}
+.fs-row svg{width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none;opacity:.8}
+.fs-label{font:700 11px/1 Inter,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:20px 2px 10px}
+.fs-chips{display:flex;flex-wrap:wrap;gap:8px}
+.fchip{display:inline-flex!important;align-items:center;padding:0 16px;height:40px;border-radius:999px;border:1px solid var(--line-strong)!important;font:600 13.5px/1 Inter,sans-serif;color:var(--text);transition:background-color .2s,color .2s,transform .15s}
+.fchip:active{transform:scale(.95)}
+.fchip.on{background:var(--text);color:var(--bg);border-color:var(--text)!important}
+
+@media(prefers-reduced-motion:reduce){
+  .feed.open,.feed.closing,.fswipe svg,.fburst svg,.fburst i,.feed-btn .feed-dot::after,.fact.pop .fact-ic{animation:none!important}
+  .fsheet,.ftoast,.feed-glow{transition:none}
+}

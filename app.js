@@ -110,7 +110,7 @@ function migrateHistoryEntry(e){
   // старые записи не знали, авто-имя это или ручное: считаем авто, если имя
   // целиком собрано из наших словарей (тогда его можно переводить)
   const auto=typeof e.auto==="boolean"?e.auto:null; // null — решим после загрузки словарей (paletteNameWords объявлен ниже)
-  return{id:e.id||makeId(),colors:e.colors||[],name,note:e.note||"",date:e.date||Date.now(),fav:!!e.fav,auto,nameLang:e.nameLang||"",seed:(e.seed&&typeof e.seed.a==="number"&&typeof e.seed.n==="number")?e.seed:newNameSeed()};
+  return{id:e.id||makeId(),colors:e.colors||[],name,note:e.note||"",date:e.date||Date.now(),fav:!!e.fav,auto,nameLang:e.nameLang||"",seed:(e.seed&&typeof e.seed.a==="number"&&typeof e.seed.n==="number")?e.seed:newNameSeed(),libId:e.libId,libAuto:e.libAuto,feedLike:e.feedLike};
 }
 function makeId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
 function loadHistory(){try{return(JSON.parse(localStorage.getItem("colorletteHistory")||"[]")).map(migrateHistoryEntry)}catch{return[]}}
@@ -3280,6 +3280,45 @@ document.fonts?.ready?.then(syncParsePanelHeight);
 loadFromUrl();
 pvLoadState();
 renderPresets();renderLibrary();renderHistory();renderBeautiful();renderMarquee();render();makeShades();renderGradStops();makeGradient();syncContrastFromPalette();renderContrastMatrix();
+// --- Feed (лента палитр в стиле Shorts): мост в приватный скоуп приложения ---
+if(window.ColoretteFeed)window.ColoretteFeed.init((()=>{
+  const sigOf=a=>(a||[]).map(c=>valid(c,"")).join("-");
+  return{
+    lang:()=>lang,
+    // генерация «на лету» с нужным размером/настроением, не трогая текущую палитру студии
+    generate(o){
+      const sm=mood,sh=harmony,sc=colors;
+      try{mood=moodProfiles[o.mood]?o.mood:"balanced";harmony=o.harmony||"free";colors=Array.from({length:o.n},()=>"#000000");return generateHarmony(null,null,null).slice()}
+      finally{mood=sm;harmony=sh;colors=sc}
+    },
+    nameFor:(cols,seed)=>generatePaletteName(cols,seed),
+    newSeed:newNameSeed,
+    library:()=>libItems(),
+    isLiked:cols=>{const k=sigOf(cols);return history.some(h=>h.fav&&sigOf(h.colors)===k)},
+    like(p){
+      const k=sigOf(p.colors),h=history.find(x=>sigOf(x.colors)===k);
+      if(h)h.fav=true;
+      else history.unshift({id:makeId(),colors:[...p.colors],name:p.name,note:"",date:Date.now(),fav:true,auto:!!p.auto,nameLang:lang,seed:p.seed||newNameSeed(),feedLike:true});
+      saveHistory();renderHistory();
+    },
+    unlike(cols){
+      const k=sigOf(cols);
+      for(let i=history.length-1;i>=0;i--){const h=history[i];if(sigOf(h.colors)!==k)continue;h.fav=false;if(h.feedLike&&!h.note)history.splice(i,1)}
+      saveHistory();renderHistory();
+    },
+    apply(p,view){
+      pushUndo();colors=cleanColors(p.colors);resetLocks();
+      const k=sigOf(colors);
+      if(!history.some(h=>sigOf(h.colors)===k)){
+        history.unshift({id:makeId(),colors:[...colors],name:p.name||autoNameFor(colors),note:"",date:Date.now(),fav:false,auto:!!p.auto,nameLang:lang,seed:p.seed||newNameSeed()});
+        let kept=0;history=history.filter(h=>{if(h.fav)return true;kept++;return kept<=12});saveHistory();renderHistory();
+      }
+      render();activateView(view||"generator");
+      showToast(t("feedToastApplied"),4500,{label:t("undoBtn"),fn:undo});
+      try{document.querySelector(".panel")?.scrollIntoView({behavior:"smooth",block:"start"})}catch{}
+    }
+  };
+})());
 applyLanguage(lang);
 if(pvOpenOnLoad)activateView("preview");
 document.querySelectorAll(".tab").forEach(tb=>{tb.tabIndex=tb.classList.contains("active")?0:-1});
