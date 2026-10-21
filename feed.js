@@ -15,7 +15,8 @@ Object.assign(translations.en, {
   feedToastHex:"{v} copied", feedToastImage:"Image saved", feedToastTuned:"Feed updated", feedCoach:"Swipe up for the next one · double-tap to like",
   feedMoreHex:"Copy HEX codes", feedMoreCss:"Copy CSS variables", feedMoreLink:"Copy link", feedMoreImage:"Save as image", feedOpenIn:"Open in studio",
   feedTuneTitle:"Tune your feed", feedTuneSub:"New palettes will follow your taste.", feedMood:"Mood", feedAny:"Any", feedCount:"Colors per palette", feedMix:"Mix",
-  feedShareText:"“{name}” — a palette from the colorlette°", feedSheetLabel:"Palette actions"
+  feedShareText:"“{name}” — a palette from the colorlette°", feedSheetLabel:"Palette actions",
+  feedImgTitle:"Your image is ready", feedImgHint:"Press and hold the image, then choose “Save image”.", feedImgShare:"Send / save via…", feedImgCopy:"Copy image", feedToastImgCopied:"Image copied"
 });
 Object.assign(translations.ru, {
   feedBtnTitle:"Лента палитр", feedCta:"Листать палитры", feedClose:"Закрыть", feedLike:"Лайк", feedApply:"Применить", feedShare:"Поделиться",
@@ -24,7 +25,8 @@ Object.assign(translations.ru, {
   feedToastHex:"{v} скопирован", feedToastImage:"Картинка сохранена", feedToastTuned:"Лента обновлена", feedCoach:"Свайп вверх — следующая · двойной тап — лайк",
   feedMoreHex:"Скопировать HEX-коды", feedMoreCss:"Скопировать CSS-переменные", feedMoreLink:"Скопировать ссылку", feedMoreImage:"Сохранить картинкой", feedOpenIn:"Открыть в студии",
   feedTuneTitle:"Настройте ленту", feedTuneSub:"Новые палитры подстроятся под ваш вкус.", feedMood:"Настроение", feedAny:"Любое", feedCount:"Цветов в палитре", feedMix:"Микс",
-  feedShareText:"«{name}» — палитра из the colorlette°", feedSheetLabel:"Действия с палитрой"
+  feedShareText:"«{name}» — палитра из the colorlette°", feedSheetLabel:"Действия с палитрой",
+  feedImgTitle:"Картинка готова", feedImgHint:"Нажмите на картинку и удерживайте, затем выберите «Сохранить изображение».", feedImgShare:"Отправить / сохранить через…", feedImgCopy:"Копировать картинку", feedToastImgCopied:"Картинка скопирована"
 });
 
 /* ============================ цвет ============================ */
@@ -416,8 +418,13 @@ async function imageBlob(it){
   g.textAlign = "right"; g.font = "500 40px Montserrat,Inter,sans-serif"; g.fillText("the colorlette°", W - 54, 80);
   return new Promise(res => cv.toBlob(res, "image/png"));
 }
+let imgBlob = null;
+const blobToDataUrl = blob => new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = () => res(""); r.readAsDataURL(blob); });
 async function saveImage(it){
   const blob = await imageBlob(it); if (!blob) return;
+  // в Telegram Mini App скачивание через <a download> не работает — показываем картинку для долгого нажатия
+  // и даём системный шеринг / копирование
+  if (tg && tg.initData){ imgBlob = blob; openSheet("img", await blobToDataUrl(blob)); return; }
   const a = document.createElement("a"); a.href = URL.createObjectURL(blob);
   a.download = "colorlette-" + it.colors.map(c => c.slice(1)).join("-").toLowerCase() + ".png";
   document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
@@ -441,7 +448,7 @@ async function share(){
 
 /* ============================ шторки ============================ */
 let sheetKind = "";
-function openSheet(kind){
+function openSheet(kind, extra){
   const it = items[cur]; if (!it) return;
   sheetKind = kind;
   let h = '<div class="fgrab" id="fGrab"></div>';
@@ -454,6 +461,10 @@ function openSheet(kind){
       '</div><div class="fs-label">' + esc(t("feedOpenIn")) + '</div><div class="fs-chips">' +
         [["shades","tabShades"],["gradient","tabGradient"],["contrast","tabContrast"],["preview","tabPreview"]].map(v => '<button type="button" class="fchip" data-open="' + v[0] + '">' + esc(t(v[1])) + '</button>').join("") +
       '</div>';
+  } else if (kind === "img"){
+    h += '<div class="fs-title">' + esc(t("feedImgTitle")) + '</div><div class="fs-sub">' + esc(t("feedImgHint")) + '</div>' +
+      '<img class="fs-img" alt="" src="' + extra + '">' +
+      '<div class="fs-list">' + row("imgshare", I.share, t("feedImgShare")) + row("imgcopy", I.copy, t("feedImgCopy")) + '</div>';
   } else {
     h += '<div class="fs-title">' + esc(t("feedTuneTitle")) + '</div><div class="fs-sub">' + esc(t("feedTuneSub")) + '</div>' +
       '<div class="fs-label">' + esc(t("feedMood")) + '</div><div class="fs-chips">' +
@@ -469,7 +480,7 @@ function openSheet(kind){
 }
 const row = (id, ic, label) => '<button type="button" class="fs-row" data-row="' + id + '">' + ic + '<span>' + esc(label) + '</span></button>';
 const chip = (k, v, label, on) => '<button type="button" class="fchip' + (on ? " on" : "") + '" data-pref="' + k + '" data-v="' + v + '">' + esc(label) + '</button>';
-function closeSheet(){ sheetKind = ""; els.sheetWrap.classList.remove("open"); els.sheet.style.transform = ""; }
+function closeSheet(){ sheetKind = ""; imgBlob = null; els.sheetWrap.classList.remove("open"); els.sheet.style.transform = ""; }
 
 function bindGrab(){
   const grab = $("fGrab"); let y0 = null, dy = 0;
@@ -482,6 +493,15 @@ function sheetClick(e){
   const r = e.target.closest("[data-row]");
   if (r){
     const it = items[cur], id = r.dataset.row;
+    if (id === "imgshare"){
+      const file = new File([imgBlob], "colorlette-palette.png", { type: "image/png" });
+      (async () => { try { if (navigator.canShare && navigator.canShare({ files: [file] })) await navigator.share({ files: [file] }); else toast(t("feedImgHint")); } catch {} })();
+      return;
+    }
+    if (id === "imgcopy"){
+      (async () => { try { await navigator.clipboard.write([new ClipboardItem({ "image/png": imgBlob })]); toast(t("feedToastImgCopied")); } catch { toast(t("feedImgHint")); } })();
+      return;
+    }
     if (id === "hex"){ copyText(it.colors.join(", ")); toast(t("toastCopied")); }
     if (id === "css"){ copyText(":root{\n" + it.colors.map((c,i) => "  --color-" + (i+1) + ": " + c + ";").join("\n") + "\n}"); toast(t("toastCopied")); }
     if (id === "link"){ copyText(linkFor(it)); toast(t("toastCopied")); }
